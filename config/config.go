@@ -121,18 +121,15 @@ func JsontToConfig(json map[string]interface{}) *Config {
 
 func ValidateAndSetConfig(cfg *Config) error {
 	if err := validateConfig(cfg); err != nil {
-		fmt.Println("Failed to validate config:", err)
-		return err
+		return fmt.Errorf("failed to validate config: %v", err)
 	}
 
 	if err := determineAES(cfg); err != nil {
-		fmt.Println("Failed to determine AES:", err)
-		return err
+		return fmt.Errorf("failed to determine AES: %v", err)
 	}
 
 	if err := determineTLS(cfg); err != nil {
-		fmt.Println("Failed to determine TLS:", err)
-		return err
+		return fmt.Errorf("failed to determine TLS: %v", err)
 	}
 	return nil
 }
@@ -200,24 +197,6 @@ func validateConfig(cfg *Config) error {
 		if net.ParseIP(cfg.JoinAddress) == nil {
 			return fmt.Errorf("invalid join address format")
 		}
-		joinPort, err := strconv.Atoi(cfg.JoinPort)
-		if err != nil || joinPort <= 1024 || joinPort > 65535 {
-			return fmt.Errorf("join port must be in the range of (1024,65535]")
-		}
-		if !CheckRemoteAddressAvailability(cfg.JoinAddress, joinPort) {
-			return fmt.Errorf("join address %s:%d is not reachable", cfg.JoinAddress, joinPort)
-		}
-	}
-
-	if (cfg.JoinAddress != Unspecified && cfg.JoinPort == Unspecified) || (cfg.JoinAddress == Unspecified && cfg.JoinPort != Unspecified) {
-		return fmt.Errorf("both --ja and --jp must be specified together")
-	}
-
-	if cfg.JoinAddress != Unspecified && cfg.JoinPort != Unspecified {
-		if net.ParseIP(cfg.JoinAddress) == nil {
-			return fmt.Errorf("invalid join address format")
-		}
-
 		joinPort, err := strconv.Atoi(cfg.JoinPort)
 		if err != nil || joinPort <= 1024 || joinPort > 65535 {
 			return fmt.Errorf("join port must be in the range of (1024,65535]")
