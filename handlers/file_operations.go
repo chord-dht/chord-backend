@@ -25,7 +25,7 @@ func StoreFile(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
-			"message": "Failed to get file",
+			"message": "Failed to store file",
 			"details": err.Error(),
 		})
 		return

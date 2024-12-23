@@ -80,6 +80,9 @@ func JsontToConfig(json map[string]interface{}) *Config {
 	if val, ok := json["Port"].(float64); ok {
 		cfg.Port = fmt.Sprintf("%v", val)
 	}
+	if val, ok := json["Mode"].(string); ok {
+		cfg.Mode = val
+	}
 	if val, ok := json["JoinAddress"].(string); ok {
 		cfg.JoinAddress = val
 	}
@@ -122,8 +125,6 @@ func ValidateAndSetConfig(cfg *Config) error {
 		return err
 	}
 
-	determineMode(cfg)
-
 	if err := determineAES(cfg); err != nil {
 		fmt.Println("Failed to determine AES:", err)
 		return err
@@ -163,10 +164,6 @@ func validateConfig(cfg *Config) error {
 		return fmt.Errorf("identifier length must be in the range of [1,160]")
 	}
 
-	if cfg.IpAddress == Unspecified {
-		return fmt.Errorf("ip address must be specified")
-	}
-
 	if net.ParseIP(cfg.IpAddress) == nil {
 		return fmt.Errorf("invalid ip address format")
 	}
@@ -193,6 +190,23 @@ func validateConfig(cfg *Config) error {
 
 	if cfg.SuccessorsLength < 1 || cfg.SuccessorsLength > 32 {
 		return fmt.Errorf("number of successors must be in the range of [1,32]")
+	}
+
+	if cfg.Mode != "create" && cfg.Mode != "join" {
+		return fmt.Errorf("mode must be either 'create' or 'join'")
+	}
+
+	if cfg.Mode == "join" {
+		if net.ParseIP(cfg.JoinAddress) == nil {
+			return fmt.Errorf("invalid join address format")
+		}
+		joinPort, err := strconv.Atoi(cfg.JoinPort)
+		if err != nil || joinPort <= 1024 || joinPort > 65535 {
+			return fmt.Errorf("join port must be in the range of (1024,65535]")
+		}
+		if !CheckRemoteAddressAvailability(cfg.JoinAddress, joinPort) {
+			return fmt.Errorf("join address %s:%d is not reachable", cfg.JoinAddress, joinPort)
+		}
 	}
 
 	if (cfg.JoinAddress != Unspecified && cfg.JoinPort == Unspecified) || (cfg.JoinAddress == Unspecified && cfg.JoinPort != Unspecified) {
@@ -241,17 +255,6 @@ func validateConfig(cfg *Config) error {
 	}
 
 	return nil
-}
-
-// Determine the mode of the Chord client.
-// If the join address and join port are both specified, the mode is "join".
-// Otherwise, the mode is "create".
-func determineMode(cfg *Config) {
-	if cfg.JoinAddress != Unspecified && cfg.JoinPort != Unspecified {
-		cfg.Mode = "join"
-	} else {
-		cfg.Mode = "create"
-	}
 }
 
 func determineAES(cfg *Config) error {
