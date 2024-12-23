@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func PrintNodeState(c *gin.Context) {
+func GetNodeState(c *gin.Context) {
 	if LocalNode == nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
@@ -17,7 +17,6 @@ func PrintNodeState(c *gin.Context) {
 	}
 
 	nodeState := LocalNode.GetState()
-	nodeState.PrintState()
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":    "success",
