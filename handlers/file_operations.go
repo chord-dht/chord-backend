@@ -21,6 +21,15 @@ func init() {
 }
 
 func StoreFile(c *gin.Context) {
+	if LocalNode == nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Node not created",
+			"details": "Please create a node first",
+		})
+		return
+	}
+
 	file, err := c.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -99,6 +108,15 @@ func StoreFile(c *gin.Context) {
 }
 
 func GetFile(c *gin.Context) {
+	if LocalNode == nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Node not created",
+			"details": "Please create a node first",
+		})
+		return
+	}
+
 	json := make(map[string]interface{})
 	if err := c.BindJSON(&json); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -186,6 +204,15 @@ func GetFile(c *gin.Context) {
 }
 
 func DownloadFile(c *gin.Context) {
+	if LocalNode == nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Node not created",
+			"details": "Please create a node first",
+		})
+		return
+	}
+
 	json := make(map[string]interface{})
 	if err := c.BindJSON(&json); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{

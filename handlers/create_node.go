@@ -9,6 +9,15 @@ import (
 )
 
 func CreateNode(c *gin.Context) {
+	if LocalNode != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"error":   "Node already exists",
+			"details": "Please quit the existing node first",
+		})
+		return
+	}
+
 	json := make(map[string]interface{})
 	if err := c.BindJSON(&json); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{

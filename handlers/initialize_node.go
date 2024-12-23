@@ -17,11 +17,20 @@ func InitializeNode(c *gin.Context) {
 		return
 	}
 
-	LocalNode.Initialize(
+	err := LocalNode.Initialize(
 		config.NodeConfig.Mode,
 		config.NodeConfig.JoinAddress,
 		config.NodeConfig.JoinPort,
 	)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"error":   "Failed to initialize node",
+			"details": err.Error(),
+		})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "success",

@@ -3,7 +3,7 @@ module chord-backend
 go 1.23.3
 
 require (
-	github.com/chord-dht/chord-core v0.0.0-20241222214214-bf9e31757cee
+	github.com/chord-dht/chord-core v0.0.1
 	github.com/gin-contrib/cors v1.7.2
 	github.com/gin-gonic/gin v1.10.0
 )
