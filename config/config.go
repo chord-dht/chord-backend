@@ -98,6 +98,12 @@ func JsontToConfig(json map[string]interface{}) *Config {
 	if val, ok := json["CheckPredecessorTime"].(float64); ok {
 		cfg.CheckPredecessorTime = int(val)
 	}
+	if val, ok := json["StorageDir"].(string); ok {
+		cfg.StorageDir = val
+	}
+	if val, ok := json["BackupDir"].(string); ok {
+		cfg.BackupDir = val
+	}
 	if val, ok := json["AESBool"].(bool); ok {
 		cfg.AESBool = val
 	}
