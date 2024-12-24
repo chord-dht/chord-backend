@@ -1,10 +1,12 @@
 package handlers
 
 import (
-	"chord-backend/aes"
-	"chord-backend/config"
 	"io"
 	"net/http"
+
+	"github.com/chord-dht/chord-backend/config"
+
+	"github.com/chord-dht/chord-backend/aes"
 
 	"github.com/chord-dht/chord-core/tools"
 	"github.com/gin-gonic/gin"

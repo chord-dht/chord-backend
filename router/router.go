@@ -1,7 +1,7 @@
 package router
 
 import (
-	"chord-backend/handlers"
+	"github.com/chord-dht/chord-backend/handlers"
 
 	"github.com/gin-gonic/gin"
 )

@@ -1,4 +1,4 @@
-module chord-backend
+module github.com/chord-dht/chord-backend
 
 go 1.23.3
 

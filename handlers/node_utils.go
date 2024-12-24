@@ -1,9 +1,10 @@
 package handlers
 
 import (
-	"chord-backend/config"
 	"fmt"
 	"time"
+
+	"github.com/chord-dht/chord-backend/config"
 
 	"github.com/chord-dht/chord-core/node"
 	"github.com/chord-dht/chord-core/storage"

@@ -1,13 +1,14 @@
 package config
 
 import (
-	"chord-backend/aes"
 	"crypto/tls"
 	"fmt"
 	"net"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/chord-dht/chord-backend/aes"
 )
 
 const Unspecified = "Unspecified"

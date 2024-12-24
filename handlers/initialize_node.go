@@ -1,8 +1,9 @@
 package handlers
 
 import (
-	"chord-backend/config"
 	"net/http"
+
+	"github.com/chord-dht/chord-backend/config"
 
 	"github.com/gin-gonic/gin"
 )
