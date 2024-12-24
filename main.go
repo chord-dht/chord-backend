@@ -23,7 +23,6 @@ func main() {
 	r.GET("/initialize", handlers.InitializeNode)
 	r.GET("/quit", handlers.QuitNode)
 	r.GET("/printstate", handlers.GetNodeState)
-	r.POST("/lookup", handlers.Lookup)
 	r.POST("/storefile", handlers.StoreFile)
 	r.POST("/getfile", handlers.GetFile)
 	r.POST("/downloadfile", handlers.DownloadFile)
