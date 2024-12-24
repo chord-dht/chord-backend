@@ -1,7 +1,7 @@
 package main
 
 import (
-	"chord-backend/handlers"
+	"chord-backend/router"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -19,13 +19,7 @@ func main() {
 		AllowCredentials: true,
 	}))
 
-	r.POST("/new", handlers.CreateNode)
-	r.GET("/initialize", handlers.InitializeNode)
-	r.GET("/quit", handlers.QuitNode)
-	r.GET("/printstate", handlers.GetNodeState)
-	r.POST("/storefile", handlers.StoreFile)
-	r.POST("/getfile", handlers.GetFile)
-	r.POST("/downloadfile", handlers.DownloadFile)
+	router.SetupRouter(r)
 
 	r.Run(":8080")
 }
