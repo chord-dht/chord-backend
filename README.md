@@ -6,6 +6,8 @@ Example Usage:
 package main
 
 import (
+    "log"
+
     "github.com/chord-dht/chord-backend/router"
 
     "github.com/gin-contrib/cors"
@@ -26,6 +28,10 @@ func main() {
 
     router.SetupRouter(r)
 
-    r.Run(":8080")
+    port := ":9000"
+    log.Println("Starting server on", port)
+    if err := r.Run(port); err != nil {
+        log.Fatalf("Server stopped with error: %v", err)
+    }
 }
 ```
