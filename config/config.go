@@ -55,7 +55,7 @@ func NewConfig() *Config {
 		FixFingersTime:       -1,
 		CheckPredecessorTime: -1,
 		StorageDir:           "storage",
-		BackupDir:            "backup",
+		BackupDir:            "backups",
 		AESBool:              false,
 		AESKeyPath:           "",
 		TLSBool:              false,
