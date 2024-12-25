@@ -55,75 +55,142 @@ func NewConfig() *Config {
 		StabilizeTime:        -1,
 		FixFingersTime:       -1,
 		CheckPredecessorTime: -1,
-		StorageDir:           "storage",
-		BackupDir:            "backups",
-		AESBool:              false,
+		StorageDir:           "",
+		BackupDir:            "",
+		AESBool:              true,
 		AESKeyPath:           "",
-		TLSBool:              false,
+		TLSBool:              true,
 		CaCert:               "",
 		ServerCert:           "",
 		ServerKey:            "",
 	}
 }
 
-func JsontToConfig(json map[string]interface{}) *Config {
+func JsonToConfig(json map[string]interface{}) (*Config, error) {
 	cfg := NewConfig()
 
-	if val, ok := json["IdentifierLength"].(float64); ok {
-		cfg.IdentifierLength = int(val)
+	if err := parseConfig(json, cfg); err != nil {
+		return nil, err
 	}
-	if val, ok := json["SuccessorsLength"].(float64); ok {
-		cfg.SuccessorsLength = int(val)
+
+	return cfg, nil
+}
+
+func parseConfig(json map[string]interface{}, cfg *Config) error {
+	var err error
+
+	if cfg.IdentifierLength, err = getIntFromJson(json, "IdentifierLength"); err != nil {
+		return err
 	}
-	if val, ok := json["IpAddress"].(string); ok {
-		cfg.IpAddress = val
+
+	if cfg.SuccessorsLength, err = getIntFromJson(json, "SuccessorsLength"); err != nil {
+		return err
 	}
-	if val, ok := json["Port"].(float64); ok {
-		cfg.Port = fmt.Sprintf("%v", val)
+
+	if cfg.IpAddress, err = getStringFromJson(json, "IpAddress"); err != nil {
+		return err
 	}
-	if val, ok := json["Mode"].(string); ok {
-		cfg.Mode = val
+
+	if cfg.Port, err = getStringFromJson(json, "Port"); err != nil {
+		return err
 	}
-	if val, ok := json["JoinAddress"].(string); ok {
-		cfg.JoinAddress = val
+
+	if cfg.Mode, err = getStringFromJson(json, "Mode"); err != nil {
+		return err
 	}
-	if val, ok := json["JoinPort"].(float64); ok {
-		cfg.JoinPort = fmt.Sprintf("%v", val)
+
+	if cfg.Mode == "join" {
+		if cfg.JoinAddress, err = getStringFromJson(json, "JoinAddress"); err != nil {
+			return err
+		}
+
+		if cfg.JoinPort, err = getStringFromJson(json, "JoinPort"); err != nil {
+			return err
+		}
 	}
-	if val, ok := json["StabilizeTime"].(float64); ok {
-		cfg.StabilizeTime = int(val)
+
+	if cfg.StabilizeTime, err = getIntFromJson(json, "StabilizeTime"); err != nil {
+		return err
 	}
-	if val, ok := json["FixFingersTime"].(float64); ok {
-		cfg.FixFingersTime = int(val)
+
+	if cfg.FixFingersTime, err = getIntFromJson(json, "FixFingersTime"); err != nil {
+		return err
 	}
-	if val, ok := json["CheckPredecessorTime"].(float64); ok {
-		cfg.CheckPredecessorTime = int(val)
+
+	if cfg.CheckPredecessorTime, err = getIntFromJson(json, "CheckPredecessorTime"); err != nil {
+		return err
 	}
-	if val, ok := json["StorageDir"].(string); ok {
-		cfg.StorageDir = val
+
+	if cfg.StorageDir, err = getStringFromJson(json, "StorageDir"); err != nil {
+		return err
 	}
-	if val, ok := json["BackupDir"].(string); ok {
-		cfg.BackupDir = val
+
+	if cfg.BackupDir, err = getStringFromJson(json, "BackupDir"); err != nil {
+		return err
 	}
-	if val, ok := json["AESBool"].(bool); ok {
-		cfg.AESBool = val
+
+	if cfg.AESBool, err = getBoolFromJson(json, "AESBool"); err != nil {
+		return err
 	}
-	if val, ok := json["AESKeyPath"].(string); ok {
-		cfg.AESKeyPath = val
+
+	if cfg.AESBool {
+		if cfg.AESKeyPath, err = getStringFromJson(json, "AESKeyPath"); err != nil {
+			return err
+		}
 	}
-	if val, ok := json["TLSBool"].(bool); ok {
-		cfg.TLSBool = val
+
+	if cfg.TLSBool, err = getBoolFromJson(json, "TLSBool"); err != nil {
+		return err
 	}
-	if val, ok := json["CaCert"].(string); ok {
-		cfg.CaCert = val
+
+	if cfg.TLSBool {
+		if cfg.CaCert, err = getStringFromJson(json, "CaCert"); err != nil {
+			return err
+		}
+
+		if cfg.ServerCert, err = getStringFromJson(json, "ServerCert"); err != nil {
+			return err
+		}
+
+		if cfg.ServerKey, err = getStringFromJson(json, "ServerKey"); err != nil {
+			return err
+		}
 	}
-	if val, ok := json["ServerCert"].(string); ok {
-		cfg.ServerCert = val
+
+	return nil
+}
+
+func getIntFromJson(json map[string]interface{}, key string) (int, error) {
+	val, ok := json[key]
+	if !ok {
+		return 0, fmt.Errorf("%s must be specified", key)
 	}
-	if val, ok := json["ServerKey"].(string); ok {
-		cfg.ServerKey = val
+	if v, ok := val.(float64); ok {
+		return int(v), nil
 	}
-	return cfg
+	return 0, fmt.Errorf("%s must be a float64, got %T", key, val)
+}
+
+func getStringFromJson(json map[string]interface{}, key string) (string, error) {
+	val, ok := json[key]
+	if !ok {
+		return "", fmt.Errorf("%s must be specified", key)
+	}
+	if v, ok := val.(string); ok {
+		return v, nil
+	}
+	return "", fmt.Errorf("%s must be a string, got %T", key, val)
+}
+
+func getBoolFromJson(json map[string]interface{}, key string) (bool, error) {
+	val, ok := json[key]
+	if !ok {
+		return false, fmt.Errorf("%s must be specified", key)
+	}
+	if v, ok := val.(bool); ok {
+		return v, nil
+	}
+	return false, fmt.Errorf("%s must be a bool, got %T", key, val)
 }
 
 func ValidateAndSetConfig(cfg *Config) error {
@@ -141,7 +208,6 @@ func ValidateAndSetConfig(cfg *Config) error {
 	return nil
 }
 
-// CheckPortAvailability
 func CheckPortAvailability(port int) bool {
 	address := fmt.Sprintf(":%d", port)
 	listener, err := net.Listen("tcp", address)
@@ -152,7 +218,6 @@ func CheckPortAvailability(port int) bool {
 	return true
 }
 
-// CheckRemoteAddressAvailability
 func CheckRemoteAddressAvailability(address string, port int) bool {
 	conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", address, port), 5*time.Second)
 	if err != nil {
@@ -162,7 +227,6 @@ func CheckRemoteAddressAvailability(address string, port int) bool {
 	return true
 }
 
-// Validate the configuration, returning an error if the configuration is invalid.
 func validateConfig(cfg *Config) error {
 	if cfg.IdentifierLength < 1 || cfg.IdentifierLength > 160 {
 		return fmt.Errorf("identifier length must be in the range of [1,160]")
@@ -215,7 +279,7 @@ func validateConfig(cfg *Config) error {
 
 	if cfg.AESBool {
 		if cfg.AESKeyPath == "" {
-			return fmt.Errorf("AES key path must be specified if --aes is specified")
+			return fmt.Errorf("AES key path must be specified if AESBool is true")
 		}
 		if _, err := os.Stat(cfg.AESKeyPath); os.IsNotExist(err) {
 			return fmt.Errorf("AES key file does not exist at specified path")
@@ -224,17 +288,17 @@ func validateConfig(cfg *Config) error {
 
 	if cfg.TLSBool {
 		if cfg.CaCert == "" {
-			return fmt.Errorf("CA certificate path must be specified if --tls is specified")
+			return fmt.Errorf("CA certificate path must be specified if TLSBool is true")
 		} else if _, err := os.Stat(cfg.CaCert); os.IsNotExist(err) {
 			return fmt.Errorf("CA certificate file does not exist at specified path")
 		}
 		if cfg.ServerCert == "" {
-			return fmt.Errorf("server certificate path must be specified if --tls is specified")
+			return fmt.Errorf("server certificate path must be specified if TLSBool is true")
 		} else if _, err := os.Stat(cfg.ServerCert); os.IsNotExist(err) {
 			return fmt.Errorf("server certificate file does not exist at specified path")
 		}
 		if cfg.ServerKey == "" {
-			return fmt.Errorf("server key path must be specified if --tls is specified")
+			return fmt.Errorf("server key path must be specified if TLSBool is true")
 		} else if _, err := os.Stat(cfg.ServerKey); os.IsNotExist(err) {
 			return fmt.Errorf("server key file does not exist at specified path")
 		}
@@ -244,7 +308,7 @@ func validateConfig(cfg *Config) error {
 }
 
 func determineAES(cfg *Config) error {
-	var err error = nil
+	var err error
 	if cfg.AESBool {
 		cfg.AESKey, err = aes.LoadKey(cfg.AESKeyPath)
 		return err
@@ -254,7 +318,7 @@ func determineAES(cfg *Config) error {
 
 func determineTLS(cfg *Config) error {
 	if cfg.TLSBool {
-		var err error = nil
+		var err error
 		cfg.ServerTLSConfig, cfg.ClientTLSConfig, err = SetupTLS(cfg.CaCert, cfg.ServerCert, cfg.ServerKey)
 		return err
 	}

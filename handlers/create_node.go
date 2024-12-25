@@ -20,41 +20,49 @@ func CreateNode(c *gin.Context) {
 	}
 
 	json := make(map[string]interface{})
-	if err := c.BindJSON(&json); err != nil {
+	if bindErr := c.BindJSON(&json); bindErr != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
 			"error":   "Failed to bind JSON",
-			"details": err.Error(),
+			"details": bindErr.Error(),
 		})
 		return
 	}
 
-	cfg := config.JsontToConfig(json)
+	cfg, parseErr := config.JsonToConfig(json)
+	if parseErr != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"error":   "Failed to parse JSON",
+			"details": parseErr.Error(),
+		})
+		return
+	}
 
-	if err := config.ValidateAndSetConfig(cfg); err != nil {
+	if validErr := config.ValidateAndSetConfig(cfg); validErr != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
 			"error":   "Failed to validate config",
-			"details": err.Error(),
+			"details": validErr.Error(),
 		})
 		return
 	}
 
 	config.NodeConfig = cfg
 
-	var err error = nil
-	LocalNode, err = NewNodeWithConfig(config.NodeConfig, cfs.CacheStorageFactory)
-	if err != nil {
+	var newErr error = nil
+	LocalNode, newErr = NewNodeWithConfig(config.NodeConfig, cfs.CacheStorageFactory)
+	if newErr != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  "error",
 			"error":   "Failed to create node",
-			"details": err.Error(),
+			"details": newErr.Error(),
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "success",
-		"message": "new node successed",
+		"message": "new node succeeded",
 	})
 }
