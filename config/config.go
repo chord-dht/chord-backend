@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/chord-dht/chord-backend/aes"
+	"github.com/chord-dht/chord-backend/json"
 )
 
 const Unspecified = "Unspecified"
@@ -57,9 +58,9 @@ func NewConfig() *Config {
 		CheckPredecessorTime: -1,
 		StorageDir:           "",
 		BackupDir:            "",
-		AESBool:              true,
+		AESBool:              false,
 		AESKeyPath:           "",
-		TLSBool:              true,
+		TLSBool:              false,
 		CaCert:               "",
 		ServerCert:           "",
 		ServerKey:            "",
@@ -76,121 +77,88 @@ func JsonToConfig(json map[string]interface{}) (*Config, error) {
 	return cfg, nil
 }
 
-func parseConfig(json map[string]interface{}, cfg *Config) error {
+func parseConfig(cfgJson map[string]interface{}, cfg *Config) error {
 	var err error
 
-	if cfg.IdentifierLength, err = getIntFromJson(json, "IdentifierLength"); err != nil {
+	if cfg.IdentifierLength, err = json.GetIntFromJson(cfgJson, "IdentifierLength"); err != nil {
 		return err
 	}
 
-	if cfg.SuccessorsLength, err = getIntFromJson(json, "SuccessorsLength"); err != nil {
+	if cfg.SuccessorsLength, err = json.GetIntFromJson(cfgJson, "SuccessorsLength"); err != nil {
 		return err
 	}
 
-	if cfg.IpAddress, err = getStringFromJson(json, "IpAddress"); err != nil {
+	if cfg.IpAddress, err = json.GetStringFromJson(cfgJson, "IpAddress"); err != nil {
 		return err
 	}
 
-	if cfg.Port, err = getStringFromJson(json, "Port"); err != nil {
+	if cfg.Port, err = json.GetStringFromJson(cfgJson, "Port"); err != nil {
 		return err
 	}
 
-	if cfg.Mode, err = getStringFromJson(json, "Mode"); err != nil {
+	if cfg.Mode, err = json.GetStringFromJson(cfgJson, "Mode"); err != nil {
 		return err
 	}
 
 	if cfg.Mode == "join" {
-		if cfg.JoinAddress, err = getStringFromJson(json, "JoinAddress"); err != nil {
+		if cfg.JoinAddress, err = json.GetStringFromJson(cfgJson, "JoinAddress"); err != nil {
 			return err
 		}
 
-		if cfg.JoinPort, err = getStringFromJson(json, "JoinPort"); err != nil {
+		if cfg.JoinPort, err = json.GetStringFromJson(cfgJson, "JoinPort"); err != nil {
 			return err
 		}
 	}
 
-	if cfg.StabilizeTime, err = getIntFromJson(json, "StabilizeTime"); err != nil {
+	if cfg.StabilizeTime, err = json.GetIntFromJson(cfgJson, "StabilizeTime"); err != nil {
 		return err
 	}
 
-	if cfg.FixFingersTime, err = getIntFromJson(json, "FixFingersTime"); err != nil {
+	if cfg.FixFingersTime, err = json.GetIntFromJson(cfgJson, "FixFingersTime"); err != nil {
 		return err
 	}
 
-	if cfg.CheckPredecessorTime, err = getIntFromJson(json, "CheckPredecessorTime"); err != nil {
+	if cfg.CheckPredecessorTime, err = json.GetIntFromJson(cfgJson, "CheckPredecessorTime"); err != nil {
 		return err
 	}
 
-	if cfg.StorageDir, err = getStringFromJson(json, "StorageDir"); err != nil {
+	if cfg.StorageDir, err = json.GetStringFromJson(cfgJson, "StorageDir"); err != nil {
 		return err
 	}
 
-	if cfg.BackupDir, err = getStringFromJson(json, "BackupDir"); err != nil {
+	if cfg.BackupDir, err = json.GetStringFromJson(cfgJson, "BackupDir"); err != nil {
 		return err
 	}
 
-	if cfg.AESBool, err = getBoolFromJson(json, "AESBool"); err != nil {
+	if cfg.AESBool, err = json.GetBoolFromJson(cfgJson, "AESBool"); err != nil {
 		return err
 	}
 
 	if cfg.AESBool {
-		if cfg.AESKeyPath, err = getStringFromJson(json, "AESKeyPath"); err != nil {
+		if cfg.AESKeyPath, err = json.GetStringFromJson(cfgJson, "AESKeyPath"); err != nil {
 			return err
 		}
 	}
 
-	if cfg.TLSBool, err = getBoolFromJson(json, "TLSBool"); err != nil {
+	if cfg.TLSBool, err = json.GetBoolFromJson(cfgJson, "TLSBool"); err != nil {
 		return err
 	}
 
 	if cfg.TLSBool {
-		if cfg.CaCert, err = getStringFromJson(json, "CaCert"); err != nil {
+		if cfg.CaCert, err = json.GetStringFromJson(cfgJson, "CaCert"); err != nil {
 			return err
 		}
 
-		if cfg.ServerCert, err = getStringFromJson(json, "ServerCert"); err != nil {
+		if cfg.ServerCert, err = json.GetStringFromJson(cfgJson, "ServerCert"); err != nil {
 			return err
 		}
 
-		if cfg.ServerKey, err = getStringFromJson(json, "ServerKey"); err != nil {
+		if cfg.ServerKey, err = json.GetStringFromJson(cfgJson, "ServerKey"); err != nil {
 			return err
 		}
 	}
 
 	return nil
-}
-
-func getIntFromJson(json map[string]interface{}, key string) (int, error) {
-	val, ok := json[key]
-	if !ok {
-		return 0, fmt.Errorf("%s must be specified", key)
-	}
-	if v, ok := val.(float64); ok {
-		return int(v), nil
-	}
-	return 0, fmt.Errorf("%s must be a float64, got %T", key, val)
-}
-
-func getStringFromJson(json map[string]interface{}, key string) (string, error) {
-	val, ok := json[key]
-	if !ok {
-		return "", fmt.Errorf("%s must be specified", key)
-	}
-	if v, ok := val.(string); ok {
-		return v, nil
-	}
-	return "", fmt.Errorf("%s must be a string, got %T", key, val)
-}
-
-func getBoolFromJson(json map[string]interface{}, key string) (bool, error) {
-	val, ok := json[key]
-	if !ok {
-		return false, fmt.Errorf("%s must be specified", key)
-	}
-	if v, ok := val.(bool); ok {
-		return v, nil
-	}
-	return false, fmt.Errorf("%s must be a bool, got %T", key, val)
 }
 
 func ValidateAndSetConfig(cfg *Config) error {
@@ -237,7 +205,10 @@ func validateConfig(cfg *Config) error {
 	}
 
 	port, err := strconv.Atoi(cfg.Port)
-	if err != nil || port <= 1024 || port > 65535 {
+	if err != nil {
+		return fmt.Errorf("port must be an integer")
+	}
+	if port <= 1024 || port > 65535 {
 		return fmt.Errorf("port must be in the range of (1024,65535]")
 	}
 	if !CheckPortAvailability(port) {
@@ -269,7 +240,10 @@ func validateConfig(cfg *Config) error {
 			return fmt.Errorf("invalid join address format")
 		}
 		joinPort, err := strconv.Atoi(cfg.JoinPort)
-		if err != nil || joinPort <= 1024 || joinPort > 65535 {
+		if err != nil {
+			return fmt.Errorf("join port must be an integer")
+		}
+		if joinPort <= 1024 || joinPort > 65535 {
 			return fmt.Errorf("join port must be in the range of (1024,65535]")
 		}
 		if !CheckRemoteAddressAvailability(cfg.JoinAddress, joinPort) {

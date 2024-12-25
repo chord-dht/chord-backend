@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -8,11 +9,7 @@ import (
 
 func QuitNode(c *gin.Context) {
 	if LocalNode == nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  "error",
-			"error":   "Node not created",
-			"details": "Please create a node first",
-		})
+		sendErrorResponse(c, http.StatusBadRequest, "NODE_NOT_EXISTS_ERROR", errors.New("node not created: Please create a node first"))
 		return
 	}
 
@@ -21,6 +18,6 @@ func QuitNode(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "success",
-		"message": "quit node successed",
+		"message": "quit node succeeded",
 	})
 }

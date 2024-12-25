@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 	"os"
 	"path/filepath"
 
 	"github.com/chord-dht/chord-backend/config"
+	"github.com/chord-dht/chord-backend/json"
 
 	"github.com/chord-dht/chord-backend/aes"
 
@@ -22,62 +24,38 @@ func init() {
 }
 
 func GetFile(c *gin.Context) {
-	json := make(map[string]interface{})
-	if err := c.BindJSON(&json); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  "error",
-			"error":   "Failed to bind JSON",
-			"details": err.Error(),
-		})
+	filenameJson, bindErr := bindJSON(c)
+	if bindErr != nil {
+		sendErrorResponse(c, http.StatusBadRequest, "BIND_JSON_ERROR", bindErr)
 		return
 	}
 
-	var filename string
-	if val, ok := json["filename"].(string); ok {
-		filename = val
+	filename, parseErr := json.GetStringFromJson(filenameJson, "filename")
+	if parseErr != nil {
+		sendErrorResponse(c, http.StatusBadRequest, "PARSE_JSON_ERROR", parseErr)
+		return
 	}
 
 	fileIdentifier := tools.GenerateIdentifier(filename)
 
 	if LocalNode == nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":          "error",
-			"message":         "Node not created",
-			"details":         "Please create a node first",
-			"file_identifier": fileIdentifier,
-		})
+		sendErrorResponse(c, http.StatusBadRequest, "NODE_NOT_EXISTS_ERROR", errors.New("node not created: Please create a node first"))
 		return
 	}
 
 	targetNode, err := LocalNode.GetInfo().FindSuccessorIter(fileIdentifier)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":          "error",
-			"error":           "Failed to find successor",
-			"details":         err.Error(),
-			"file_identifier": fileIdentifier,
-		})
+		sendErrorResponse(c, http.StatusInternalServerError, "FIND_ERROR", err)
 		return
 	}
 
 	reply, err := targetNode.GetFile(filename)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":          "error",
-			"error":           "Failed to get the reply from node",
-			"details":         err.Error(),
-			"file_identifier": fileIdentifier,
-			"target_node":     targetNode,
-		})
+		sendErrorResponse(c, http.StatusInternalServerError, "ACCESS_ERROR", err)
 		return
 	}
 	if !reply.Success {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":          "error",
-			"error":           "Target node reply: it can't get the file",
-			"file_identifier": fileIdentifier,
-			"target_node":     targetNode,
-		})
+		sendErrorResponse(c, http.StatusInternalServerError, "NON_FILE_ERROR", errors.New("target node reply: it doesn't have the file"))
 		return
 	}
 
@@ -86,13 +64,7 @@ func GetFile(c *gin.Context) {
 	if config.NodeConfig.AESBool {
 		fileContent, err = aes.DecryptAES(fileContent, config.NodeConfig.AESKey)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"status":          "error",
-				"error":           "Failed to decrypt the file content",
-				"details":         err.Error(),
-				"file_identifier": fileIdentifier,
-				"target_node":     targetNode,
-			})
+			sendErrorResponse(c, http.StatusInternalServerError, "DECRYPT_ERROR", err)
 			return
 		}
 	}
@@ -100,57 +72,40 @@ func GetFile(c *gin.Context) {
 	tempFilePath := filepath.Join(tempDir, filename)
 	tempFile, err := os.Create(tempFilePath)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":          "error",
-			"message":         "Failed to create temp file",
-			"details":         err.Error(),
-			"file_identifier": fileIdentifier,
-			"target_node":     targetNode,
-		})
+		sendErrorResponse(c, http.StatusInternalServerError, "TEMP_ERROR", err)
 		return
 	}
 	defer tempFile.Close()
 
 	if _, err := tempFile.Write(fileContent); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":          "error",
-			"message":         "Failed to write to temp file",
-			"details":         err.Error(),
-			"file_identifier": fileIdentifier,
-			"target_node":     targetNode,
-		})
+		sendErrorResponse(c, http.StatusInternalServerError, "TEMP_ERROR", err)
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status":          "success",
-		"file_identifier": fileIdentifier,
-		"target_node":     targetNode,
+		"status": "success",
+		"data": gin.H{
+			"file_identifier": fileIdentifier,
+			"target_node":     targetNode,
+		},
 	})
 }
 
 func DownloadFile(c *gin.Context) {
-	json := make(map[string]interface{})
-	if err := c.BindJSON(&json); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  "error",
-			"error":   "Failed to bind JSON",
-			"details": err.Error(),
-		})
+	filenameJson, bindErr := bindJSON(c)
+	if bindErr != nil {
+		sendErrorResponse(c, http.StatusBadRequest, "BIND_JSON_ERROR", bindErr)
 		return
 	}
 
-	var filename string
-	if val, ok := json["filename"].(string); ok {
-		filename = val
+	filename, parseErr := json.GetStringFromJson(filenameJson, "filename")
+	if parseErr != nil {
+		sendErrorResponse(c, http.StatusBadRequest, "PARSE_JSON_ERROR", parseErr)
+		return
 	}
 
 	if LocalNode == nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  "error",
-			"message": "Node not created",
-			"details": "Please create a node first",
-		})
+		sendErrorResponse(c, http.StatusBadRequest, "NODE_NOT_EXISTS_ERROR", errors.New("node not created: Please create a node first"))
 		return
 	}
 
@@ -158,11 +113,7 @@ func DownloadFile(c *gin.Context) {
 
 	// Check if the file exists
 	if _, err := os.Stat(tempFilePath); os.IsNotExist(err) {
-		c.JSON(http.StatusNotFound, gin.H{
-			"status":  "error",
-			"message": "File not found",
-			"details": err.Error(),
-		})
+		sendErrorResponse(c, http.StatusNotFound, "TEMP_ERROR", errors.New("file not found"))
 		return
 	}
 	defer os.Remove(tempFilePath)

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/chord-dht/chord-backend/config"
@@ -11,53 +12,33 @@ import (
 
 func CreateNode(c *gin.Context) {
 	if LocalNode != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  "error",
-			"error":   "Node already exists",
-			"details": "Please quit the existing node first",
-		})
+		sendErrorResponse(c, http.StatusBadRequest, "NODE_EXISTS_ERROR", errors.New("node already exists: Please quit the existing node first"))
 		return
 	}
 
-	json := make(map[string]interface{})
-	if bindErr := c.BindJSON(&json); bindErr != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  "error",
-			"error":   "Failed to bind JSON",
-			"details": bindErr.Error(),
-		})
+	cfgJson, bindErr := bindJSON(c)
+	if bindErr != nil {
+		sendErrorResponse(c, http.StatusBadRequest, "BIND_JSON_ERROR", bindErr)
 		return
 	}
 
-	cfg, parseErr := config.JsonToConfig(json)
+	cfg, parseErr := config.JsonToConfig(cfgJson)
 	if parseErr != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  "error",
-			"error":   "Failed to parse JSON",
-			"details": parseErr.Error(),
-		})
+		sendErrorResponse(c, http.StatusBadRequest, "PARSE_JSON_ERROR", parseErr)
 		return
 	}
 
 	if validErr := config.ValidateAndSetConfig(cfg); validErr != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  "error",
-			"error":   "Failed to validate config",
-			"details": validErr.Error(),
-		})
+		sendErrorResponse(c, http.StatusBadRequest, "VALIDATE_CONFIG_ERROR", validErr)
 		return
 	}
 
 	config.NodeConfig = cfg
 
-	var newErr error = nil
+	var newErr error
 	LocalNode, newErr = NewNodeWithConfig(config.NodeConfig, cfs.CacheStorageFactory)
 	if newErr != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  "error",
-			"error":   "Failed to create node",
-			"details": newErr.Error(),
-		})
+		sendErrorResponse(c, http.StatusInternalServerError, "CREATE_NODE_ERROR", newErr)
 		return
 	}
 
