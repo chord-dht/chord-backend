@@ -15,22 +15,23 @@ import (
 )
 
 func main() {
+    port := 21776
+
     gin.SetMode(gin.ReleaseMode)
     r := gin.New()
     r.Use(gin.Logger())
     r.Use(gin.Recovery())
     r.Use(cors.New(cors.Config{
-        AllowOrigins:     []string{"*"},
+        AllowOrigins:     []string{"http://localhost", "http://127.0.0.1"},
         AllowMethods:     []string{"GET", "POST"},
         AllowHeaders:     []string{"Content-Type"},
         AllowCredentials: true,
     }))
 
-    router.SetupRouter(r)
+    router.SetupAPIRouter("api", r)
 
-    port := ":9000"
     log.Println("Starting server on", port)
-    if err := r.Run(port); err != nil {
+    if err := r.Run("localhost:" + strconv.Itoa(port)); err != nil {
         log.Fatalf("Server stopped with error: %v", err)
     }
 }
