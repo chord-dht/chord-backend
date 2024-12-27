@@ -23,39 +23,71 @@ func init() {
 	}
 }
 
+func createTempFile(tempDir, filename string, fileContent []byte) error {
+	tempFilePath := filepath.Join(tempDir, filename)
+	tempFile, err := os.Create(tempFilePath)
+	if err != nil {
+		return err
+	}
+	defer tempFile.Close()
+
+	if _, err := tempFile.Write(fileContent); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func GetFile(c *gin.Context) {
 	filenameJson, bindErr := bindJSON(c)
 	if bindErr != nil {
-		sendErrorResponse(c, http.StatusBadRequest, "BIND_JSON_ERROR", bindErr)
+		sendBindJSONErrorResponse(c, bindErr)
 		return
 	}
 
 	filename, parseErr := json.GetStringFromJson(filenameJson, "filename")
 	if parseErr != nil {
-		sendErrorResponse(c, http.StatusBadRequest, "PARSE_JSON_ERROR", parseErr)
+		sendParseJSONErrorResponse(c, parseErr)
 		return
 	}
-
-	fileIdentifier := tools.GenerateIdentifier(filename)
 
 	if LocalNode == nil {
-		sendErrorResponse(c, http.StatusBadRequest, "NODE_NOT_EXISTS_ERROR", errors.New("node not created: Please create a node first"))
+		sendNotExistErrorResponse(c)
 		return
 	}
+
+	// Generate the file identifier
+	// Keep in mind that you shouldn't invoke it when the node is not created
+	fileIdentifier := tools.GenerateIdentifier(filename)
 
 	targetNode, err := LocalNode.GetInfo().FindSuccessorIter(fileIdentifier)
 	if err != nil {
-		sendErrorResponse(c, http.StatusInternalServerError, "FIND_ERROR", err)
+		sendErrorResponse(c, http.StatusInternalServerError,
+			"FIND_ERROR", err,
+			gin.H{"file_identifier": fileIdentifier},
+		)
 		return
 	}
 
 	reply, err := targetNode.GetFile(filename)
 	if err != nil {
-		sendErrorResponse(c, http.StatusInternalServerError, "ACCESS_ERROR", err)
+		sendErrorResponse(c, http.StatusInternalServerError,
+			"ACCESS_ERROR", err,
+			gin.H{
+				"file_identifier": fileIdentifier,
+				"target_node":     targetNode,
+			},
+		)
 		return
 	}
 	if !reply.Success {
-		sendErrorResponse(c, http.StatusInternalServerError, "NON_FILE_ERROR", errors.New("target node reply: it doesn't have the file"))
+		sendErrorResponse(c, http.StatusInternalServerError,
+			"NON_FILE_ERROR", errors.New("target node reply: it doesn't have the file"),
+			gin.H{
+				"file_identifier": fileIdentifier,
+				"target_node":     targetNode,
+			},
+		)
 		return
 	}
 
@@ -64,21 +96,25 @@ func GetFile(c *gin.Context) {
 	if config.NodeConfig.AESBool {
 		fileContent, err = aes.DecryptAES(fileContent, config.NodeConfig.AESKey)
 		if err != nil {
-			sendErrorResponse(c, http.StatusInternalServerError, "DECRYPT_ERROR", err)
+			sendErrorResponse(c, http.StatusInternalServerError,
+				"DECRYPT_ERROR", err,
+				gin.H{
+					"file_identifier": fileIdentifier,
+					"target_node":     targetNode,
+				},
+			)
 			return
 		}
 	}
 
-	tempFilePath := filepath.Join(tempDir, filename)
-	tempFile, err := os.Create(tempFilePath)
-	if err != nil {
-		sendErrorResponse(c, http.StatusInternalServerError, "TEMP_ERROR", err)
-		return
-	}
-	defer tempFile.Close()
-
-	if _, err := tempFile.Write(fileContent); err != nil {
-		sendErrorResponse(c, http.StatusInternalServerError, "TEMP_ERROR", err)
+	if err := createTempFile(tempDir, filename, fileContent); err != nil {
+		sendErrorResponse(c, http.StatusInternalServerError,
+			"TEMP_ERROR", err,
+			gin.H{
+				"file_identifier": fileIdentifier,
+				"target_node":     targetNode,
+			},
+		)
 		return
 	}
 
@@ -94,18 +130,13 @@ func GetFile(c *gin.Context) {
 func DownloadFile(c *gin.Context) {
 	filenameJson, bindErr := bindJSON(c)
 	if bindErr != nil {
-		sendErrorResponse(c, http.StatusBadRequest, "BIND_JSON_ERROR", bindErr)
+		sendBindJSONErrorResponse(c, bindErr)
 		return
 	}
 
 	filename, parseErr := json.GetStringFromJson(filenameJson, "filename")
 	if parseErr != nil {
-		sendErrorResponse(c, http.StatusBadRequest, "PARSE_JSON_ERROR", parseErr)
-		return
-	}
-
-	if LocalNode == nil {
-		sendErrorResponse(c, http.StatusBadRequest, "NODE_NOT_EXISTS_ERROR", errors.New("node not created: Please create a node first"))
+		sendParseJSONErrorResponse(c, parseErr)
 		return
 	}
 
@@ -113,7 +144,7 @@ func DownloadFile(c *gin.Context) {
 
 	// Check if the file exists
 	if _, err := os.Stat(tempFilePath); os.IsNotExist(err) {
-		sendErrorResponse(c, http.StatusNotFound, "TEMP_ERROR", errors.New("file not found"))
+		sendErrorResponse(c, http.StatusNotFound, "FILE_NOT_FIND_ERROR", errors.New("file not found"))
 		return
 	}
 	defer os.Remove(tempFilePath)

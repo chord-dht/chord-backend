@@ -11,7 +11,7 @@ import (
 
 func InitializeNode(c *gin.Context) {
 	if LocalNode == nil {
-		sendErrorResponse(c, http.StatusBadRequest, "NODE_NOT_EXISTS_ERROR", errors.New("node not created: Please create a node first"))
+		sendNotExistErrorResponse(c)
 		return
 	}
 
@@ -20,7 +20,9 @@ func InitializeNode(c *gin.Context) {
 		config.NodeConfig.JoinAddress,
 		config.NodeConfig.JoinPort,
 	); err != nil {
-		sendErrorResponse(c, http.StatusInternalServerError, "INITIALIZE_ERROR", errors.New("failed to initialize node: "+err.Error()))
+		sendErrorResponse(c, http.StatusInternalServerError,
+			"INITIALIZE_ERROR", errors.New("failed to initialize node: "+err.Error()),
+		)
 		return
 	}
 
