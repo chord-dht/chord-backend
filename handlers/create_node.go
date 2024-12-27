@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/chord-dht/chord-backend/config"
@@ -12,19 +11,19 @@ import (
 
 func CreateNode(c *gin.Context) {
 	if LocalNode != nil {
-		sendErrorResponse(c, http.StatusBadRequest, "NODE_EXISTS_ERROR", errors.New("node already exists: Please quit the existing node first"))
+		sendExistErrorResponse(c)
 		return
 	}
 
 	cfgJson, bindErr := bindJSON(c)
 	if bindErr != nil {
-		sendErrorResponse(c, http.StatusBadRequest, "BIND_JSON_ERROR", bindErr)
+		sendBindJSONErrorResponse(c, bindErr)
 		return
 	}
 
 	cfg, parseErr := config.JsonToConfig(cfgJson)
 	if parseErr != nil {
-		sendErrorResponse(c, http.StatusBadRequest, "PARSE_JSON_ERROR", parseErr)
+		sendParseJSONErrorResponse(c, parseErr)
 		return
 	}
 
@@ -35,14 +34,15 @@ func CreateNode(c *gin.Context) {
 
 	config.NodeConfig = cfg
 
-	var newErr error
-	LocalNode, newErr = NewNodeWithConfig(config.NodeConfig, cfs.CacheStorageFactory)
+	newNode, newErr := NewNodeWithConfig(config.NodeConfig, cfs.CacheStorageFactory)
 	if newErr != nil {
 		sendErrorResponse(c, http.StatusInternalServerError, "CREATE_NODE_ERROR", newErr)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	LocalNode = newNode
+
+	c.JSON(http.StatusCreated, gin.H{
 		"status":  "success",
 		"message": "new node succeeded",
 	})
