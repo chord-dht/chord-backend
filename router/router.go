@@ -7,6 +7,7 @@ import (
 )
 
 func SetupRouter(r *gin.Engine) {
+	r.GET("/nodestatus", handlers.NodeStatus)
 	r.POST("/new", handlers.CreateNode)
 	r.GET("/initialize", handlers.InitializeNode)
 	r.GET("/quit", handlers.QuitNode)
