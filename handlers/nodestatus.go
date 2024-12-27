@@ -9,11 +9,11 @@ import (
 func NodeStatus(c *gin.Context) {
 	if LocalNode == nil {
 		c.JSON(http.StatusOK, gin.H{
-			"exists": true,
+			"exists": false,
 		})
 	} else {
 		c.JSON(http.StatusOK, gin.H{
-			"exists": false,
+			"exists": true,
 		})
 	}
 }
