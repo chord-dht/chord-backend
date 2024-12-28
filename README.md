@@ -1,5 +1,7 @@
 # chord-backend
 
+API Document: [API Doc](API.md)
+
 Example Usage:
 
 ```go
