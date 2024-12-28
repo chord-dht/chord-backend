@@ -23,6 +23,7 @@ func InitializeNode(c *gin.Context) {
 		sendErrorResponse(c, http.StatusInternalServerError,
 			"INITIALIZE_ERROR", errors.New("failed to initialize node: "+err.Error()),
 		)
+		LocalNode = nil
 		return
 	}
 
